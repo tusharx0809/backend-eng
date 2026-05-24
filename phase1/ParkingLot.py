@@ -12,6 +12,16 @@ class Car(Vehicle):
 class Bike(Vehicle):
     pass
 
+class ParkingLot:
+    def __init__(self, floors, parkings_per_floors):
+        self.floors = floors
+        self.parkings_per_floors = parkings_per_floors
+
+        self.slots = [
+            [None for _ in range(parkings_per_floors)]
+            for _ in range(floors)
+        ]
+
 
 def main():
     pass
