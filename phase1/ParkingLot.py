@@ -22,6 +22,19 @@ class ParkingLot:
             for _ in range(floors)
         ]
 
+    def enterVehicle(self, license_plate):
+        total_slots = self.floors * self.parkings_per_floors
+
+        for i in range(total_slots):
+            floor = i // self.parkings_per_floors
+            slot = i % self.parkings_per_floors
+
+            if self.slots[floor][slot] is None:
+                self.slots[floor][slot] = license_plate
+                return
+
+        print("Parking Lot Full")  
+
 
 def main():
     pass
