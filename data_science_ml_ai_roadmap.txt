@@ -1,0 +1,123 @@
+======================================================================
+COMPLETE DATA SCIENCE, MACHINE LEARNING, & AI ENGINEERING ROADMAP
+======================================================================
+Designed for Backend Engineers, SQL Developers, and Automation Experts
+
+PHASE 1: ADVANCED PYTHON FOUNDATIONS
+Duration: 2–3 Weeks
+----------------------------------------------------------------------
+[ ] Core Syntax: Variables, data types, loops, conditionals
+[ ] Object-Oriented Programming: Classes, inheritance, dunder methods, polymorphism
+[ ] Advanced Control Flow: List/Dict/Set comprehensions, generators, iterators, decorators, context managers
+[ ] Robust Code: Static typing (typing), error handling (try/except), logging (logging)
+[ ] Tooling & Environments: git, GitHub, virtual environments (venv, uv), dependency management (pip)
+
+PHASE 2: HIGH-PERFORMANCE DATA MANIPULATION
+Duration: 3–4 Weeks
+----------------------------------------------------------------------
+[ ] Numerical Computing (numpy): Vectorisation, broadcasting, multidimensional arrays, matrix slicing
+[ ] Traditional DataFrames (pandas): Slicing, filtering, aggregations, groupby, table joins/merges, treating missing values, datetime manipulation
+[ ] Modern DataFrames (polars): Lazy evaluation, expressions, high-performance execution on large datasets
+[ ] Data Validation (pandera): Setting schemas to validate DataFrame types and data distributions
+[ ] Data Visualization: matplotlib (static), seaborn (statistical), plotly (interactive web-based charts)
+[ ] Environment: Jupyter Notebook / JupyterLab
+
+PHASE 3: ANALYTICAL SQL & DATA ENGINEERING
+Duration: 1–2 Weeks
+----------------------------------------------------------------------
+[ ] Advanced Analytical SQL: Window functions (PARTITION BY, LEAD, LAG), recursive CTEs
+[ ] Performance Optimization: Database indexing, reading execution plans (EXPLAIN ANALYZE), query tuning
+[ ] Data Modelling: Star schema, Snowflake schema, Fact and Dimension tables
+[ ] Analytics Engineering (dbt): Transforming data inside data warehouses using software engineering best practices (version control, testing)
+
+PHASE 4: APPLIED MATHEMATICS & STATISTICS
+Duration: 1 Month
+----------------------------------------------------------------------
+[ ] Descriptive Statistics: Mean, median, mode, variance, standard deviation, Interquartile Range (IQR), skewness, kurtosis
+[ ] Probability Foundations: Permutations, combinations, conditional probability, Bayes’ Theorem
+[ ] Probability Distributions: Binomial, Poisson, Normal (Gaussian), Student’s t-distribution, Chi-Square, Central Limit Theorem (CLT)
+[ ] Inferential Statistics: Hypothesis testing (Null/Alternative), Type I/II errors, alpha levels, Z-tests, T-tests, ANOVA, Chi-Square tests, p-values
+[ ] Experimental Design: A/B testing framework, power analysis, sample size calculations
+[ ] Linear Algebra: Vectors, matrices, dot products, eigenvalues, eigenvectors, Singular Value Decomposition (SVD)
+[ ] Calculus: Derivatives, partial derivatives, gradients, optimization basics (Gradient Descent)
+
+PHASE 5: EXPLORATORY DATA ANALYSIS & FEATURE ENGINEERING
+Duration: 2 Weeks
+----------------------------------------------------------------------
+[ ] EDA Workflows: Outlier detection (Z-score, IQR), correlation analysis (Pearson, Spearman), identifying multicollinearity
+[ ] Feature Engineering: One-hot encoding, ordinal encoding, log transforms, scaling (MinMax, Standard), handling imbalanced data (SMOTE, class weights)
+[ ] Data Leakage Prevention: Ensuring preprocessing boundaries do not bleed from training sets into validation sets
+
+PHASE 6: MACHINE LEARNING CORE
+Duration: 2 Months
+----------------------------------------------------------------------
+[ ] ML Concepts: Supervised vs. unsupervised learning, bias-variance tradeoff, overfitting vs. underfitting
+[ ] Scikit-Learn Workflows: Preprocessing pipelines, column transformers, cross-validation, hyperparameter tuning (GridSearchCV, RandomizedSearchCV)
+[ ] Regression Algorithms: Linear Regression, Ridge, Lasso, Time-Series Forecasting (statsmodels, Prophet)
+[ ] Classification Algorithms: Logistic Regression, Decision Trees, Random Forests, Gradient Boosting (XGBoost, LightGBM), Support Vector Machines (SVM)
+[ ] Clustering & Dimensionality Reduction: K-Means clustering, Principal Component Analysis (PCA)
+[ ] Validation Metrics (Classification): Accuracy, precision, recall, F1-score, ROC-AUC, PR-AUC, log loss
+[ ] Validation Metrics (Regression): Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), R² score
+
+PHASE 7: BACKEND & MODEL SERVING
+Duration: 3 Weeks
+----------------------------------------------------------------------
+[ ] Model Serialization: Saving and serving models using joblib, pickle, or ONNX formats
+[ ] Modern Web APIs (FastAPI): Path parameters, query parameters, background tasks, request validation using Pydantic
+[ ] Asynchronous Processing: Handling slow ML inference asynchronously using task queues like Celery or Redis Queues
+[ ] Database Integration: Interfacing APIs with PostgreSQL using SQLAlchemy or psycopg3
+
+PHASE 8: DEPLOYMENT & DEVOPS INFRASTRUCTURE
+Duration: 3 Weeks
+----------------------------------------------------------------------
+[ ] Containerization: Writing Dockerfiles, containerizing backend APIs, managing multi-container setups using Docker Compose
+[ ] Cloud Architecture (AWS): Cloud computing (EC2), object storage (S3), serverless functions (Lambda), container hosting (ECS), managed databases (RDS)
+[ ] CI/CD: Automating linting, testing, and deployment configurations using GitHub Actions
+
+PHASE 9: DEEP LEARNING & COMPUTER VISION/NLP
+Duration: 1 Month
+----------------------------------------------------------------------
+[ ] Foundations: Artificial Neural Networks (ANN), activation functions (ReLU, Sigmoid, Softmax), forward propagation, backpropagation
+[ ] Framework (PyTorch): Tensors, Custom Datasets, DataLoaders, writing modular training loops, GPU acceleration (cuda, mps)
+[ ] Architectures: Convolutional Neural Networks (CNNs for images), Recurrent Neural Networks / LSTM (for sequential data), Transformers (Attention Mechanism)
+
+PHASE 10: GENERATIVE AI & PRODUCTION LLM ENGINEERING
+Duration: 1.5 Months
+----------------------------------------------------------------------
+[ ] Foundations: Tokenization, embeddings, context windows, semantic text similarity
+[ ] Orchestration Frameworks: langchain, llamaindex
+[ ] Vector Infrastructure: Structuring semantic data via pgvector (PostgreSQL), Pinecone, or ChromaDB
+[ ] Advanced RAG (Retrieval-Augmented Generation): Hierarchical chunking, parent-child retrieval, query rewriting, re-ranking pipelines (using Cohere or BGE re-rankers)
+[ ] Structured Output Control: Forcing LLMs to return reliable, type-safe JSON using Instructor or Outlines
+[ ] LLM Evaluation: Programmatic validation of text pipelines via context recall, precision, and faithfulness using Ragas or TruLens
+[ ] Guardrails: Prompt injection security, content filtering, and safety layers using Llama Guard
+
+PHASE 11: PRODUCTION MLOps & DATA ORCHESTRATION
+Duration: 1 Month
+----------------------------------------------------------------------
+[ ] Data Pipelines: Scheduling, dependency charting, and managing engineering tasks via Prefect, Dagster, or Apache Airflow
+[ ] Experiment Tracking: Versioning code, parameters, and outputs with MLflow or Weights & Biases
+[ ] Feature Stores: Standardizing identical data metrics for training and live endpoints using Feast
+[ ] Monitoring: Tracking data drift, concept drift, and API latencies in live environments
+
+======================================================================
+PORTFOLIO PROJECTS BLUEPRINT (Build Concurrently)
+======================================================================
+1. Tabular Machine Learning: High-imbalance financial fraud detection or customer churn system using XGBoost, packaged in a FastAPI container.
+2. Time Series: Inventory demand or financial market forecasting application incorporating external trends.
+3. Enterprise RAG Application: Internal-document Q&A tool built on your local PostgreSQL engine using pgvector, containing strict output schemas, a re-ranking stack, and full evaluation tests.
+
+======================================================================
+FINAL PRODUCTION TECH STACK
+======================================================================
+- Core Language: Python
+- Data Processing: Polars & Pandas
+- Database & Analytics: PostgreSQL, pgvector, dbt
+- Machine Learning: Scikit-Learn, XGBoost, LightGBM
+- Deep Learning: PyTorch
+- App Backend: FastAPI & Pydantic
+- Async Queues: Celery / Redis
+- Deployment: Docker & Docker Compose
+- Cloud Provider: AWS (S3, EC2, ECS, Lambda)
+- LLM Tools: LangChain, LlamaIndex, Instructor, Ragas
+======================================================================
