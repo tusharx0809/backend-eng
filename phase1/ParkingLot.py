@@ -22,7 +22,7 @@ class ParkingLot:
             for _ in range(floors)
         ]
 
-    def enterVehicle(self, license_plate):
+    def enterVehicle(self, vehicle: Vehicle):
         total_slots = self.floors * self.parkings_per_floors
 
         for i in range(total_slots):
@@ -30,14 +30,49 @@ class ParkingLot:
             slot = i % self.parkings_per_floors
 
             if self.slots[floor][slot] is None:
-                self.slots[floor][slot] = license_plate
+                self.slots[floor][slot] = vehicle
                 return
 
-        print("Parking Lot Full")  
+        print("Parking Lot Full") 
+
+    def removeVehicle(self, vehicle: Vehicle):
+        total_slots = self.floors * self.parkings_per_floors
+
+        for i in range(total_slots):
+            floor = i // self.parkings_per_floors
+            slot = i % self.parkings_per_floors
+
+            if self.slots[floor][slot] == vehicle:
+                self.slots[floor][slot] = None
+                print(Vehicle.get_vehicle_type(self), vehicle.license_plate, "left the parking lot")
+                return
+            
+    def printParkingLot(self):
+        for i in range(self.floors):
+            print("Ground Floor" if i == 0 else f"Floor Number: {i}")
+            for j in range(self.parkings_per_floors):
+                if self.slots[i][j] == None:                    
+                    print(f"Parking Number {j+1}: Empty Parking")
+                else:
+                    v = self.slots[i][j]
+                    print("Parking Number",j+1,":",v.license_plate)
+            print("\n")
 
 
 def main():
-    pass
+    parking_lot = ParkingLot(4, 5)
+
+    
+    car1 = Vehicle("HR03K4061")
+    car2 = Vehicle("PB65AU3270")
+    parking_lot.enterVehicle(car1)
+    parking_lot.enterVehicle(car2)
+    parking_lot.printParkingLot()
+
+    parking_lot.removeVehicle(car1)
+
+    parking_lot.printParkingLot()
+
 
 if __name__ == "__main__":
     main()
