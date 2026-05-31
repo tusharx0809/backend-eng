@@ -1,4 +1,6 @@
 from datetime import datetime
+import DatabaseConnection as DB
+import os
 
 class Vehicle:
     def __init__(self, license_plate):
@@ -60,19 +62,18 @@ class ParkingLot:
 
 
 def main():
-    parking_lot = ParkingLot(4, 5)
+    connection_string = f"host={os.getenv('HOSTNAME')} dbname={os.getenv('DATABASE')} user={os.getenv('USER')} password={os.getenv('PASSWORD')} port={os.getenv('PORT')}"
 
-    
-    car1 = Vehicle("HR03K4061")
-    car2 = Vehicle("PB65AU3270")
-    parking_lot.enterVehicle(car1)
-    parking_lot.enterVehicle(car2)
-    parking_lot.printParkingLot()
+    DB_connection = DB.PostgresConnection()
+    connection = DB_connection.connectToServer(connection_string)
 
-    parking_lot.removeVehicle(car1)
+    cursor = connection.cursor()
 
-    parking_lot.printParkingLot()
+    cursor.execute("SELECT version()")
 
+    print(cursor.fetchone())
+    cursor.close()
+    connection.close()
 
 if __name__ == "__main__":
     main()
