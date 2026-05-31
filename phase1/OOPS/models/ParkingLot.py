@@ -1,18 +1,4 @@
-from datetime import datetime
-import DatabaseConnection as DB
-import os
-
-class Vehicle:
-    def __init__(self, license_plate):
-        self.license_plate = license_plate
-
-    def get_vehicle_type(self):
-        return self.__class__.__name__
-
-class Car(Vehicle):
-    pass
-class Bike(Vehicle):
-    pass
+from . import Vehicle
 
 class ParkingLot:
     def __init__(self, floors, parkings_per_floors):
@@ -59,15 +45,3 @@ class ParkingLot:
                     v = self.slots[i][j]
                     print("Parking Number",j+1,":",v.license_plate)
             print("\n")
-
-
-def main():
-    with DB.PostgresConnection(os.getenv("DATABASE")) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute("select * from test")
-            print(cursor.fetchone())
-
-    
-
-if __name__ == "__main__":
-    main()
