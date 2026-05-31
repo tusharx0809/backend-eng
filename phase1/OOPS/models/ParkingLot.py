@@ -1,16 +1,30 @@
 from . import Vehicle
+from db_manager.DatabaseConnection import PostgresConnection
 
 class ParkingLot:
-    def __init__(self, floors, parkings_per_floors):
+    def __init__(self, floors, parkings_per_floors, connection: PostgresConnection):
         self.floors = floors
         self.parkings_per_floors = parkings_per_floors
+        cursor = connection.cursor()
+        for floor in range(floors):
+            table_name = f"Floor_{floor}"
+            cursor.execute(
+                f"CREATE TABLE IF NOT EXISTS {table_name} ("
+                "parking_number SERIAL PRIMARY KEY,"
+                "license_plate VARCHAR(100),"
+                "entry_time TIMESTAMP," 
+                "entry_date DATE)"
+            )
+            cursor.execute(f"SELECT count(1) from  {table_name};")
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    f"INSERT INTO {table_name} (parking_number)"
+                    f"SELECT generate_series(1, %s)",
+                    (parkings_per_floors,)
+                )
 
-        self.slots = [
-            [None for _ in range(parkings_per_floors)]
-            for _ in range(floors)
-        ]
 
-    def enterVehicle(self, vehicle: Vehicle):
+    def enterVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
         total_slots = self.floors * self.parkings_per_floors
 
         for i in range(total_slots):

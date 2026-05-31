@@ -4,12 +4,12 @@ from models.ParkingLot import ParkingLot
 import os
 
 def main():
-    parking_lot = ParkingLot(5, 20)
     with DatabaseConnection.PostgresConnection(os.getenv("DATABASE")) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute("select * from test")
-            print(cursor.fetchone())
-
+        try:
+            parking_lot = ParkingLot(4,15,connection)
+            print("Parking Lot on database created")
+        except connection.OperationalError as e:
+            print("Error: {e}")
     
 
 if __name__ == "__main__":
