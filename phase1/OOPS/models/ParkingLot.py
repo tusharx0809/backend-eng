@@ -1,28 +1,31 @@
-from datetime import datetime
-
-class Vehicle:
-    def __init__(self, license_plate):
-        self.license_plate = license_plate
-
-    def get_vehicle_type(self):
-        return self.__class__.__name__
-
-class Car(Vehicle):
-    pass
-class Bike(Vehicle):
-    pass
+from . import Vehicle
+from db_manager.DatabaseConnection import PostgresConnection
 
 class ParkingLot:
-    def __init__(self, floors, parkings_per_floors):
+    def __init__(self, floors, parkings_per_floors, connection: PostgresConnection):
         self.floors = floors
         self.parkings_per_floors = parkings_per_floors
+        cursor = connection.cursor()
+        for floor in range(floors):
+            table_name = f"Floor_{floor}"
+            cursor.execute(
+                f"CREATE TABLE IF NOT EXISTS {table_name} ("
+                "parking_number SERIAL PRIMARY KEY,"
+                "license_plate VARCHAR(100),"
+                "vehicle_type VARCHAR(50),"
+                "entry_time TIMESTAMP," 
+                "entry_date DATE)"
+            )
+            cursor.execute(f"SELECT count(1) from  {table_name};")
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    f"INSERT INTO {table_name} (parking_number)"
+                    f"SELECT generate_series(1, %s)",
+                    (parkings_per_floors,)
+                )
 
-        self.slots = [
-            [None for _ in range(parkings_per_floors)]
-            for _ in range(floors)
-        ]
 
-    def enterVehicle(self, vehicle: Vehicle):
+    def enterVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
         total_slots = self.floors * self.parkings_per_floors
 
         for i in range(total_slots):
@@ -57,22 +60,3 @@ class ParkingLot:
                     v = self.slots[i][j]
                     print("Parking Number",j+1,":",v.license_plate)
             print("\n")
-
-
-def main():
-    parking_lot = ParkingLot(4, 5)
-
-    
-    car1 = Vehicle("HR03K4061")
-    car2 = Vehicle("PB65AU3270")
-    parking_lot.enterVehicle(car1)
-    parking_lot.enterVehicle(car2)
-    parking_lot.printParkingLot()
-
-    parking_lot.removeVehicle(car1)
-
-    parking_lot.printParkingLot()
-
-
-if __name__ == "__main__":
-    main()
