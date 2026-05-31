@@ -62,18 +62,12 @@ class ParkingLot:
 
 
 def main():
-    connection_string = f"host={os.getenv('HOSTNAME')} dbname={os.getenv('DATABASE')} user={os.getenv('USER')} password={os.getenv('PASSWORD')} port={os.getenv('PORT')}"
+    with DB.PostgresConnection(os.getenv("DATABASE")) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("select * from test")
+            print(cursor.fetchone())
 
-    DB_connection = DB.PostgresConnection()
-    connection = DB_connection.connectToServer(connection_string)
-
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT version()")
-
-    print(cursor.fetchone())
-    cursor.close()
-    connection.close()
+    
 
 if __name__ == "__main__":
     main()
