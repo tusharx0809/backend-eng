@@ -12,6 +12,7 @@ class ParkingLot:
                 f"CREATE TABLE IF NOT EXISTS {table_name} ("
                 "parking_number SERIAL PRIMARY KEY,"
                 "license_plate VARCHAR(100),"
+                "vehicle_type VARCHAR(50),"
                 "entry_time TIMESTAMP," 
                 "entry_date DATE)"
             )
