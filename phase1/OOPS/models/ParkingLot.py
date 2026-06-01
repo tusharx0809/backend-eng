@@ -1,4 +1,4 @@
-from . import Vehicle
+from .Vehicle import Vehicle
 from db_manager.DatabaseConnection import PostgresConnection
 
 class ParkingLot:
@@ -26,17 +26,34 @@ class ParkingLot:
 
 
     def enterVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
-        total_slots = self.floors * self.parkings_per_floors
+        cursor = connection.cursor()
+        max_parking_number = None
+        current_floor = 0
+        while max_parking_number is None and current_floor < self.floors:
+            cursor.execute(
+                f"SELECT min(parking_number) from floor_{current_floor} WHERE license_plate IS NULL"
+            )
 
-        for i in range(total_slots):
-            floor = i // self.parkings_per_floors
-            slot = i % self.parkings_per_floors
+            max_parking_number = cursor.fetchone()[0]
+            if max_parking_number is None:
+                current_floor = current_floor + 1
+        
+        if current_floor + 1 == self.floors and max_parking_number is None:
+            print("PARKING LOT FULL")
+            return
+        else:
+            query = f"""
+                UPDATE floor_{current_floor} 
+                SET license_plate = %s, vehicle_type = %s, entry_time = NOW(), entry_date = CURRENT_DATE
+                WHERE parking_number = {max_parking_number}
+            """
 
-            if self.slots[floor][slot] is None:
-                self.slots[floor][slot] = vehicle
-                return
+            cursor.execute(
+                query,
+                (vehicle.license_plate,vehicle.get_vehicle_type())
+            )
+                      
 
-        print("Parking Lot Full") 
 
     def removeVehicle(self, vehicle: Vehicle):
         total_slots = self.floors * self.parkings_per_floors
