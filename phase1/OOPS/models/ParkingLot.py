@@ -24,6 +24,15 @@ class ParkingLot:
                     (parkings_per_floors,)
                 )
 
+            cursor.execute(
+                f"CREATE TABLE IF NOT EXISTS History ("
+                "id_number SERIAL PRIMARY KEY,"
+                "license_plate VARCHAR(100),"
+                "entry_date DATE,"
+                "entry_time TIMESTAMP,"
+                "exit_time TIMESTAMP,"
+                "charges DECIMAL(10,2))"
+            )
 
     def enterVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
         cursor = connection.cursor()
@@ -55,7 +64,7 @@ class ParkingLot:
                       
 
 
-    def removeVehicle(self, vehicle: Vehicle):
+    def exitVehicle(self, vehicle: Vehicle):
         total_slots = self.floors * self.parkings_per_floors
 
         for i in range(total_slots):
