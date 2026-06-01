@@ -1,5 +1,6 @@
 from .Vehicle import Vehicle
 from db_manager.DatabaseConnection import PostgresConnection
+from decimal import Decimal
 
 class ParkingLot:
     def __init__(self, floors, parkings_per_floors, connection: PostgresConnection):
@@ -61,20 +62,51 @@ class ParkingLot:
                 query,
                 (vehicle.license_plate,vehicle.get_vehicle_type())
             )
+            
                       
 
 
-    def exitVehicle(self, vehicle: Vehicle):
-        total_slots = self.floors * self.parkings_per_floors
+    def exitVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
+        license_plate = None
+        entry_time = None
+        exit_time = None
+        entry_date = None
+        charges = None
+        current_floor = 0
+        cursor = connection.cursor()
+        while license_plate is None and current_floor < self.floors:
+            cursor.execute(
+                f"""SELECT license_plate, entry_time, entry_date, NOW(),
+                ROUND((EXTRACT(EPOCH FROM (SELECT NOW() - entry_time FROM floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}')) / 60)::numeric, 2) as minutes from floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}'"""
+            )
+            row = cursor.fetchone()
+            if row is None:
+                current_floor = current_floor + 1
+            else:
+                license_plate = row[0]
+                entry_time = row[1]
+                entry_date = row[2]
+                exit_time = row[3]
+                rate = Decimal('0.50') if vehicle.get_vehicle_type() == 'Car' else Decimal('0.25')
+                charges = row[4] * rate
 
-        for i in range(total_slots):
-            floor = i // self.parkings_per_floors
-            slot = i % self.parkings_per_floors
+                query = f"""INSERT INTO History(license_plate, entry_date, entry_time, exit_time, charges)
+                            VALUES(%s,%s,%s,%s,%s)"""
+                cursor.execute(
+                    query,
+                    (license_plate, entry_date, entry_time, exit_time, charges,)
+                )
 
-            if self.slots[floor][slot] == vehicle:
-                self.slots[floor][slot] = None
-                print(Vehicle.get_vehicle_type(self), vehicle.license_plate, "left the parking lot")
-                return
+                query = f"""UPDATE floor_{current_floor}
+                            SET license_plate = NULL, vehicle_type = NULL, entry_time = NULL, entry_date = NULL
+                            WHERE license_plate = %s;
+                        """
+                cursor.execute(
+                    query,
+                    (vehicle.license_plate,)
+                )
+                
+
             
     def printParkingLot(self):
         for i in range(self.floors):
