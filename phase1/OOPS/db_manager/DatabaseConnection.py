@@ -1,5 +1,5 @@
 import os
-import psycopg2
+import asyncpg
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,19 +13,23 @@ class PostgresConnection:
         self.port:str = os.getenv("PORT")
         self.connection = None
 
-    def __enter__(self):
+    async def __aenter__(self):
         try:
-            connection_string = f"host={self.host} dbname={self.db_name} user={self.username} password={self.password} port={self.port}"
-            self.connection = psycopg2.connect(connection_string)
-            self.connection.autocommit = True
+            self.connection = await asyncpg.connect(
+                host=self.host,
+                database=self.db_name,
+                user=self.username,
+                password=self.password,
+                port=self.port
+            )
             return self.connection
-        except psycopg2.OperationalError as e:
+        except Exception as e:
             print(f"[Connection error] Could not connect to server: {e}")
             raise
         except:
             print(f"[Interface Error] Database interface failure: {e}")
             raise
 
-    def __exit__(self, exc_type, exc, tb):
+    async def __aexit__(self, exc_type, exc, tb):
         if self.connection:
-            self.connection.close()
+            await self.connection.close()
