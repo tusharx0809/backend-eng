@@ -63,14 +63,15 @@ class ParkingLot:
                 SET license_plate = $1, vehicle_type = $2, entry_time = NOW(), entry_date = CURRENT_DATE, is_occupied = $3
                 WHERE parking_number = $4
             """
-            await connection.execute(
-                query,
-                vehicle.license_plate,
-                vehicle.get_vehicle_type(),
-                True,
-                parking_number
-            )
-            print(f"{vehicle.license_plate} Parked at floor: {floor}, number {parking_number}")
+            async with connection.transaction():
+                await connection.execute(
+                    query,
+                    vehicle.license_plate,
+                    vehicle.get_vehicle_type(),
+                    True,
+                    parking_number
+                )
+                print(f"{vehicle.license_plate} Parked at floor: {floor}, number {parking_number}")
                 
             return True
         except Exception as e:
@@ -107,22 +108,23 @@ class ParkingLot:
                     charges = row['minutes'] * rate
                     query: str = f"""INSERT INTO History(license_plate, entry_date, entry_time, exit_time, charges)
                                 VALUES($1,$2,$3,$4,$5)"""
-                    await connection.execute(
-                        query,
-                        license_plate, 
-                        entry_date, 
-                        entry_time, 
-                        exit_time, 
-                        charges
-                    )
-                    query: str = f"""UPDATE floor_{current_floor}
-                                SET license_plate = NULL, vehicle_type = NULL, entry_time = NULL, entry_date = NULL, is_occupied = {False}
-                                WHERE license_plate = $1;
-                            """
-                    await connection.execute(
-                        query,
-                        vehicle.license_plate
-                    )
+                    async with connection.transaction():
+                        await connection.execute(
+                            query,
+                            license_plate, 
+                            entry_date, 
+                            entry_time, 
+                            exit_time, 
+                            charges
+                        )
+                        query: str = f"""UPDATE floor_{current_floor}
+                                    SET license_plate = NULL, vehicle_type = NULL, entry_time = NULL, entry_date = NULL, is_occupied = {False}
+                                    WHERE license_plate = $1;
+                                """
+                        await connection.execute(
+                            query,
+                            vehicle.license_plate
+                        )
                     return {
                         "license_plate": license_plate,
                         "charges": float(charges),
