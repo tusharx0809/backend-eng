@@ -13,18 +13,20 @@ def main():
             parking_lot = ParkingLot(4,15,connection)
             print("Parking Lot on database created")
             
-            vehicles = [
-                    Car(f"CAR{i:04d}") for i in range(30)
-                ] + [
-                    Bike(f"BIKE{i:04d}") for i in range(30)
-                ]
+            # vehicles: list = [
+            #         Car(f"CAR{i:04d}") for i in range(30)
+            #     ] + [
+            #         Bike(f"BIKE{i:04d}") for i in range(30)
+            #     ]
 
-            # Loop through the list to enter each vehicle automatically
-            for vehicle in vehicles:
-                if (parking_lot.enterVehicle(vehicle, connection)):
-                    print(f"{vehicle.get_vehicle_type()} [{vehicle.license_plate}] entered successfully.")
-                else:
-                    break
+            # if not parking_lot.checkParkinglot(connection):
+            # # Loop through the list to enter each vehicle automatically
+            #     for vehicle in vehicles:
+            #         parking_lot.enterVehicle(vehicle, connection)
+            # else:
+            #     return
+
+            parking_lot.exitVehicle(Car("CAR0011"), connection)
             
 
         except connection.OperationalError as e:

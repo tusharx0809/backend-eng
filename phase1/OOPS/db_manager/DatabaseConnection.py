@@ -5,12 +5,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class PostgresConnection:
-    def __init__(self, db_name):
-        self.host = os.getenv("HOSTNAME")
-        self.db_name = db_name
-        self.username = os.getenv("USER")
-        self.password = os.getenv("PASSWORD")
-        self.port = os.getenv("PORT")
+    def __init__(self, db_name: str):
+        self.host: str = os.getenv("HOSTNAME")
+        self.db_name: str = db_name
+        self.username: str = os.getenv("USER")
+        self.password: str = os.getenv("PASSWORD")
+        self.port:str = os.getenv("PORT")
         self.connection = None
 
     def __enter__(self):
