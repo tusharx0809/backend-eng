@@ -4,18 +4,19 @@ from decimal import Decimal
 
 class ParkingLot:
     def __init__(self, floors, parkings_per_floors, connection: PostgresConnection):
-        self.floors = floors
-        self.parkings_per_floors = parkings_per_floors
+        self.floors: int = floors
+        self.parkings_per_floors: int = parkings_per_floors
         cursor = connection.cursor()
         for floor in range(floors):
-            table_name = f"Floor_{floor}"
+            table_name: str = f"Floor_{floor}"
             cursor.execute(
                 f"CREATE TABLE IF NOT EXISTS {table_name} ("
                 "parking_number SERIAL PRIMARY KEY,"
                 "license_plate VARCHAR(100),"
                 "vehicle_type VARCHAR(50),"
                 "entry_time TIMESTAMP," 
-                "entry_date DATE)"
+                "entry_date DATE,"
+                "is_occupied BOOL DEFAULT FALSE)"
             )
             cursor.execute(f"SELECT count(1) from  {table_name};")
             if cursor.fetchone()[0] == 0:
@@ -34,13 +35,12 @@ class ParkingLot:
                 "exit_time TIMESTAMP,"
                 "charges DECIMAL(10,2))"
             )
-
-    def enterVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
+    def checkParkinglot(self, connection: PostgresConnection) -> bool:
         cursor = connection.cursor()
-        parkings_occupied = 0
-        total_parkings = self.floors * self.parkings_per_floors
+        parkings_occupied: int = 0
+        total_parkings: int = self.floors * self.parkings_per_floors
 
-        current_floor = 0
+        current_floor: int = 0
         while current_floor < self.floors:
             cursor.execute(
                 f"SELECT count(license_plate) FROM floor_{current_floor}"
@@ -50,11 +50,14 @@ class ParkingLot:
 
         if parkings_occupied == total_parkings:
             print("Parking Lot Full!")
+            return True
+        else:
             return False
-
+        
+    def enterVehicle(self, vehicle: Vehicle, connection: PostgresConnection) -> bool:       
         cursor = connection.cursor()
-        max_parking_number = None
-        current_floor = 0
+        max_parking_number: int = None
+        current_floor: int = 0
         while max_parking_number is None and current_floor < self.floors:
             cursor.execute(
                 f"SELECT min(parking_number) from floor_{current_floor} WHERE license_plate IS NULL"
@@ -68,9 +71,9 @@ class ParkingLot:
             print("PARKING LOT FULL")
             return
         else:
-            query = f"""
+            query: str = f"""
                 UPDATE floor_{current_floor} 
-                SET license_plate = %s, vehicle_type = %s, entry_time = NOW(), entry_date = CURRENT_DATE
+                SET license_plate = %s, vehicle_type = %s, entry_time = NOW(), entry_date = CURRENT_DATE, is_occupied = {True}
                 WHERE parking_number = {max_parking_number}
             """
 
@@ -78,17 +81,18 @@ class ParkingLot:
                 query,
                 (vehicle.license_plate,vehicle.get_vehicle_type())
             )
+            print(f"{vehicle.license_plate} Parked at floor: {current_floor}, number {max_parking_number}")
             
         return True             
 
 
     def exitVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
-        license_plate = None
-        entry_time = None
-        exit_time = None
-        entry_date = None
-        charges = None
-        current_floor = 0
+        license_plate: str = None
+        entry_time: str = None
+        exit_time: str = None
+        entry_date: str = None
+        charges: Decimal = None
+        current_floor: int = 0
         cursor = connection.cursor()
         while license_plate is None and current_floor < self.floors:
             cursor.execute(
@@ -106,15 +110,15 @@ class ParkingLot:
                 rate = Decimal('0.50') if vehicle.get_vehicle_type() == 'Car' else Decimal('0.25')
                 charges = row[4] * rate
 
-                query = f"""INSERT INTO History(license_plate, entry_date, entry_time, exit_time, charges)
+                query: str = f"""INSERT INTO History(license_plate, entry_date, entry_time, exit_time, charges)
                             VALUES(%s,%s,%s,%s,%s)"""
                 cursor.execute(
                     query,
                     (license_plate, entry_date, entry_time, exit_time, charges,)
                 )
 
-                query = f"""UPDATE floor_{current_floor}
-                            SET license_plate = NULL, vehicle_type = NULL, entry_time = NULL, entry_date = NULL
+                query: str = f"""UPDATE floor_{current_floor}
+                            SET license_plate = NULL, vehicle_type = NULL, entry_time = NULL, entry_date = NULL, is_occupied = {False}
                             WHERE license_plate = %s;
                         """
                 cursor.execute(
@@ -124,13 +128,13 @@ class ParkingLot:
                 
 
             
-    def printParkingLot(self):
-        for i in range(self.floors):
-            print("Ground Floor" if i == 0 else f"Floor Number: {i}")
-            for j in range(self.parkings_per_floors):
-                if self.slots[i][j] == None:                    
-                    print(f"Parking Number {j+1}: Empty Parking")
-                else:
-                    v = self.slots[i][j]
-                    print("Parking Number",j+1,":",v.license_plate)
-            print("\n")
+    # def printParkingLot(self):
+    #     for i in range(self.floors):
+    #         print("Ground Floor" if i == 0 else f"Floor Number: {i}")
+    #         for j in range(self.parkings_per_floors):
+    #             if self.slots[i][j] == None:                    
+    #                 print(f"Parking Number {j+1}: Empty Parking")
+    #             else:
+    #                 v = self.slots[i][j]
+    #                 print("Parking Number",j+1,":",v.license_plate)
+    #         print("\n")
