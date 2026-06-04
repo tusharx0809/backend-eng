@@ -1,5 +1,5 @@
 from .Vehicle import Vehicle
-from db_manager.DatabaseConnection import PostgresConnection
+from db_manager.DatabaseConnection import PostgresConnectionPool
 from decimal import Decimal
 import asyncpg
 import traceback
@@ -37,7 +37,7 @@ class ParkingLot:
                 "exit_time TIMESTAMP,"
                 "charges DECIMAL(10,2))"
             )
-    async def checkParkinglot(self, connection: PostgresConnection) -> bool:
+    async def checkParkinglot(self, connection: PostgresConnectionPool) -> bool:
         try:
             parkings_occupied: int = 0
             total_parkings: int = self.floors * self.parkings_per_floors
@@ -56,7 +56,7 @@ class ParkingLot:
             print(f"Error: {e}")
             print(traceback.format_exc())
             return False
-    async def enterVehicle(self, vehicle: Vehicle, floor: int, parking_number: int, connection: PostgresConnection) -> bool:
+    async def enterVehicle(self, vehicle: Vehicle, floor: int, parking_number: int, connection: PostgresConnectionPool) -> bool:
         try:                  
             query: str = f"""
                 UPDATE floor_{floor} 
@@ -80,7 +80,7 @@ class ParkingLot:
             return False             
 
 
-    async def exitVehicle(self, vehicle: Vehicle, connection: PostgresConnection) -> dict | None:
+    async def exitVehicle(self, vehicle: Vehicle, connection: PostgresConnectionPool) -> dict | None:
         try:
             license_plate: str = None
             vehicle_type: str = None

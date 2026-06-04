@@ -1,40 +1,21 @@
 from datetime import datetime
-from db_manager.DatabaseConnection import PostgresConnection
 from models.ParkingLot import ParkingLot
 from models.Bike import Bike
 from models.Car import Car
 from models.Vehicle import Vehicle
-from fastapi import FastAPI, HTTPException
-from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, Request
 from typing import Any,Dict
 from models.ParkingEntryRequest import ParkingEntryRequest
 from models.ParkingExitRequest import ParkingExitRequest
+from lifespan import lifespan
 
-FLOORS = 4
-PARKINGS_PER_FLOOR = 10
-
-pg_connection = PostgresConnection("ParkingLot")
-parking_lot = ParkingLot(FLOORS,PARKINGS_PER_FLOOR)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print(f"Creating tables if not existing...")
-    try:
-        async with pg_connection as db_connection:
-            await parking_lot.initialize_schema(db_connection)
-        app.state.parking_lot = parking_lot
-        print("Database schema created!")
-    except Exception as e:
-        print(f"Failed to initilize DB: {e}")
-        raise e
-    yield
 
 ParkingApp = FastAPI(lifespan=lifespan)
 
 @ParkingApp.post("/enterVehicle")
-async def enterVehice(payload: ParkingEntryRequest) -> Dict[str,Any]:
-    current_lot: ParkingLot = ParkingApp.state.parking_lot
+async def enterVehice(payload: ParkingEntryRequest, request: Request) -> Dict[str,Any]:
+    current_lot: ParkingLot = request.app.state.parking_lot
+    db_pool = request.app.state.db_pool
 
     floor = payload.floor
     parking_number = payload.parking_number
@@ -55,7 +36,7 @@ async def enterVehice(payload: ParkingEntryRequest) -> Dict[str,Any]:
         )    
 
 
-    async with pg_connection as db_connection:
+    async with db_pool as db_connection:
         if await current_lot.checkParkinglot(db_connection):
             raise HTTPException(status_code=400, detail="Parking Lot Full")
         
@@ -80,11 +61,13 @@ async def enterVehice(payload: ParkingEntryRequest) -> Dict[str,Any]:
 
 
 @ParkingApp.put("/exitVehicle")
-async def exitVehice(payload: ParkingExitRequest) -> Dict[str,Any]:
+async def exitVehice(payload: ParkingExitRequest, request: Request) -> Dict[str,Any]:
     vehicle = Vehicle(license_plate=payload.license_plate)
-    current_lot: ParkingLot = ParkingApp.state.parking_lot
+    current_lot: ParkingLot = request.app.state.parking_lot
+
+    db_pool = request.app.state.db_pool
     
-    async with pg_connection as db_connection:
+    async with db_pool as db_connection:
         result = await current_lot.exitVehicle(vehicle, db_connection)
 
     if result is None:
