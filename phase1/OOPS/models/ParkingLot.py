@@ -1,17 +1,18 @@
 from .Vehicle import Vehicle
 from db_manager.DatabaseConnection import PostgresConnection
 from decimal import Decimal
-import psycopg2
+import asyncpg
 import traceback
 
 class ParkingLot:
-    def __init__(self, floors, parkings_per_floors, connection: PostgresConnection):
+    def __init__(self, floors: int, parkings_per_floors: int):
         self.floors: int = floors
         self.parkings_per_floors: int = parkings_per_floors
-        cursor = connection.cursor()
-        for floor in range(floors):
+
+    async def initialize_schema(self, connection):
+        for floor in range(self.floors):
             table_name: str = f"Floor_{floor}"
-            cursor.execute(
+            await connection.execute(
                 f"CREATE TABLE IF NOT EXISTS {table_name} ("
                 "parking_number SERIAL PRIMARY KEY,"
                 "license_plate VARCHAR(100),"
@@ -20,15 +21,14 @@ class ParkingLot:
                 "entry_date DATE,"
                 "is_occupied BOOL DEFAULT FALSE)"
             )
-            cursor.execute(f"SELECT count(1) from  {table_name};")
-            if cursor.fetchone()[0] == 0:
-                cursor.execute(
+            count = await connection.fetchval(f"SELECT count(1) from  {table_name};")
+            if count == 0:
+                await connection.execute(
                     f"INSERT INTO {table_name} (parking_number)"
-                    f"SELECT generate_series(1, %s)",
-                    (parkings_per_floors,)
+                    f"SELECT generate_series(1, $1)",
+                    self.parkings_per_floors
                 )
-
-            cursor.execute(
+            await connection.execute(
                 f"CREATE TABLE IF NOT EXISTS History ("
                 "id_number SERIAL PRIMARY KEY,"
                 "license_plate VARCHAR(100),"
@@ -37,91 +37,98 @@ class ParkingLot:
                 "exit_time TIMESTAMP,"
                 "charges DECIMAL(10,2))"
             )
-    def checkParkinglot(self, connection: PostgresConnection) -> bool:
+    async def checkParkinglot(self, connection: PostgresConnection) -> bool:
         try:
-            cursor = connection.cursor()
             parkings_occupied: int = 0
             total_parkings: int = self.floors * self.parkings_per_floors
-
             current_floor: int = 0
             while current_floor < self.floors:
-                cursor.execute(
+                count = await connection.execute(
                     f"SELECT count(license_plate) FROM floor_{current_floor}"
                 )
-                parkings_occupied += cursor.fetchone()[0]
+                parkings_occupied += count
                 current_floor += 1
-
             if parkings_occupied == total_parkings:
                 print("Parking Lot Full!")
                 return True
-            else:
-                return False
-        except psycopg2.Error as e:
+            return False
+        except Exception as e:
             print(f"Error: {e}")
             print(traceback.format_exc())
             return False
-    def enterVehicle(self, vehicle: Vehicle, floor: int, parking_number: int, connection: PostgresConnection) -> bool:
-        try:
-            cursor = connection.cursor()                  
+    async def enterVehicle(self, vehicle: Vehicle, floor: int, parking_number: int, connection: PostgresConnection) -> bool:
+        try:                  
             query: str = f"""
                 UPDATE floor_{floor} 
-                SET license_plate = %s, vehicle_type = %s, entry_time = NOW(), entry_date = CURRENT_DATE, is_occupied = {True}
-                WHERE parking_number = {parking_number}
+                SET license_plate = $1, vehicle_type = $2, entry_time = NOW(), entry_date = CURRENT_DATE, is_occupied = $3
+                WHERE parking_number = $4
             """
-            cursor.execute(
+            await connection.execute(
                 query,
-                (vehicle.license_plate,vehicle.get_vehicle_type())
+                vehicle.license_plate,
+                vehicle.get_vehicle_type(),
+                True,
+                parking_number
             )
             print(f"{vehicle.license_plate} Parked at floor: {floor}, number {parking_number}")
                 
             return True
-        except psycopg2.Error as e:
+        except Exception as e:
             print(f"Error: {e}")
             print(traceback.format_exc())
             return False             
 
 
-    def exitVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
+    async def exitVehicle(self, vehicle: Vehicle, connection: PostgresConnection) -> dict | None:
         try:
             license_plate: str = None
+            vehicle_type: str = None
             entry_time: str = None
             exit_time: str = None
             entry_date: str = None
             charges: Decimal = None
             current_floor: int = 0
-            cursor = connection.cursor()
             while license_plate is None and current_floor < self.floors:
-                cursor.execute(
-                    f"""SELECT license_plate, entry_time, entry_date, NOW(),
-                    ROUND((EXTRACT(EPOCH FROM (SELECT NOW() - entry_time FROM floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}')) / 60)::numeric, 2) as minutes from floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}'"""
+                row = await connection.fetchrow(
+                    f"""SELECT license_plate, vehicle_type, entry_time, entry_date, NOW()::timestamp as current_now,
+                    ROUND((EXTRACT(EPOCH FROM (SELECT NOW() - entry_time FROM floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}')) / 60)::numeric, 2) as minutes from floor_{current_floor} WHERE license_plate = $1""",
+                    vehicle.license_plate
                 )
-                row = cursor.fetchone()
+                
                 if row is None:
                     current_floor = current_floor + 1
                 else:
-                    license_plate = row[0]
-                    entry_time = row[1]
-                    entry_date = row[2]
-                    exit_time = row[3]
-                    rate = Decimal('0.50') if vehicle.get_vehicle_type() == 'Car' else Decimal('0.25')
-                    charges = row[4] * rate
-
+                    license_plate = row['license_plate']
+                    vehicle_type = row['vehicle_type']
+                    entry_time = row['entry_time']
+                    entry_date = row['entry_date']
+                    exit_time = row['current_now']
+                    rate = Decimal('0.50') if vehicle_type == 'Car' else Decimal('0.25')
+                    charges = row['minutes'] * rate
                     query: str = f"""INSERT INTO History(license_plate, entry_date, entry_time, exit_time, charges)
-                                VALUES(%s,%s,%s,%s,%s)"""
-                    cursor.execute(
+                                VALUES($1,$2,$3,$4,$5)"""
+                    await connection.execute(
                         query,
-                        (license_plate, entry_date, entry_time, exit_time, charges,)
+                        license_plate, 
+                        entry_date, 
+                        entry_time, 
+                        exit_time, 
+                        charges
                     )
-
                     query: str = f"""UPDATE floor_{current_floor}
                                 SET license_plate = NULL, vehicle_type = NULL, entry_time = NULL, entry_date = NULL, is_occupied = {False}
-                                WHERE license_plate = %s;
+                                WHERE license_plate = $1;
                             """
-                    cursor.execute(
+                    await connection.execute(
                         query,
-                        (vehicle.license_plate,)
+                        vehicle.license_plate
                     )
-        except psycopg2.Error as e:
+                    return {
+                        "license_plate": license_plate,
+                        "charges": float(charges),
+                        "minutes_parked": float(row['minutes'])
+                    }
+        except Exception as e:
             print(f"Error: {e}")
             print(traceback.format_exc())
                 
