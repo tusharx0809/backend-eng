@@ -37,6 +37,22 @@ class ParkingLot:
 
     def enterVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
         cursor = connection.cursor()
+        parkings_occupied = 0
+        total_parkings = self.floors * self.parkings_per_floors
+
+        current_floor = 0
+        while current_floor < self.floors:
+            cursor.execute(
+                f"SELECT count(license_plate) FROM floor_{current_floor}"
+            )
+            parkings_occupied += cursor.fetchone()[0]
+            current_floor += 1
+
+        if parkings_occupied == total_parkings:
+            print("Parking Lot Full!")
+            return False
+
+        cursor = connection.cursor()
         max_parking_number = None
         current_floor = 0
         while max_parking_number is None and current_floor < self.floors:
@@ -63,7 +79,7 @@ class ParkingLot:
                 (vehicle.license_plate,vehicle.get_vehicle_type())
             )
             
-                      
+        return True             
 
 
     def exitVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
