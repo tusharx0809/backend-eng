@@ -26,7 +26,7 @@ def main():
             # else:
             #     return
 
-            parking_lot.exitVehicle(Car("CAR0011"), connection)
+            parking_lot.exitVehicle(Car("HR03K4061"), connection)
             
 
         except connection.OperationalError as e:

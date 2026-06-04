@@ -1,6 +1,8 @@
 from .Vehicle import Vehicle
 from db_manager.DatabaseConnection import PostgresConnection
 from decimal import Decimal
+import psycopg2
+import traceback
 
 class ParkingLot:
     def __init__(self, floors, parkings_per_floors, connection: PostgresConnection):
@@ -36,95 +38,92 @@ class ParkingLot:
                 "charges DECIMAL(10,2))"
             )
     def checkParkinglot(self, connection: PostgresConnection) -> bool:
-        cursor = connection.cursor()
-        parkings_occupied: int = 0
-        total_parkings: int = self.floors * self.parkings_per_floors
+        try:
+            cursor = connection.cursor()
+            parkings_occupied: int = 0
+            total_parkings: int = self.floors * self.parkings_per_floors
 
-        current_floor: int = 0
-        while current_floor < self.floors:
-            cursor.execute(
-                f"SELECT count(license_plate) FROM floor_{current_floor}"
-            )
-            parkings_occupied += cursor.fetchone()[0]
-            current_floor += 1
+            current_floor: int = 0
+            while current_floor < self.floors:
+                cursor.execute(
+                    f"SELECT count(license_plate) FROM floor_{current_floor}"
+                )
+                parkings_occupied += cursor.fetchone()[0]
+                current_floor += 1
 
-        if parkings_occupied == total_parkings:
-            print("Parking Lot Full!")
-            return True
-        else:
+            if parkings_occupied == total_parkings:
+                print("Parking Lot Full!")
+                return True
+            else:
+                return False
+        except psycopg2.Error as e:
+            print(f"Error: {e}")
+            print(traceback.format_exc())
             return False
-        
-    def enterVehicle(self, vehicle: Vehicle, connection: PostgresConnection) -> bool:       
-        cursor = connection.cursor()
-        max_parking_number: int = None
-        current_floor: int = 0
-        while max_parking_number is None and current_floor < self.floors:
-            cursor.execute(
-                f"SELECT min(parking_number) from floor_{current_floor} WHERE license_plate IS NULL"
-            )
-
-            max_parking_number = cursor.fetchone()[0]
-            if max_parking_number is None:
-                current_floor = current_floor + 1
-        
-        if current_floor + 1 == self.floors and max_parking_number is None:
-            print("PARKING LOT FULL")
-            return
-        else:
+    def enterVehicle(self, vehicle: Vehicle, floor: int, parking_number: int, connection: PostgresConnection) -> bool:
+        try:
+            cursor = connection.cursor()                  
             query: str = f"""
-                UPDATE floor_{current_floor} 
+                UPDATE floor_{floor} 
                 SET license_plate = %s, vehicle_type = %s, entry_time = NOW(), entry_date = CURRENT_DATE, is_occupied = {True}
-                WHERE parking_number = {max_parking_number}
+                WHERE parking_number = {parking_number}
             """
-
             cursor.execute(
                 query,
                 (vehicle.license_plate,vehicle.get_vehicle_type())
             )
-            print(f"{vehicle.license_plate} Parked at floor: {current_floor}, number {max_parking_number}")
-            
-        return True             
+            print(f"{vehicle.license_plate} Parked at floor: {floor}, number {parking_number}")
+                
+            return True
+        except psycopg2.Error as e:
+            print(f"Error: {e}")
+            print(traceback.format_exc())
+            return False             
 
 
     def exitVehicle(self, vehicle: Vehicle, connection: PostgresConnection):
-        license_plate: str = None
-        entry_time: str = None
-        exit_time: str = None
-        entry_date: str = None
-        charges: Decimal = None
-        current_floor: int = 0
-        cursor = connection.cursor()
-        while license_plate is None and current_floor < self.floors:
-            cursor.execute(
-                f"""SELECT license_plate, entry_time, entry_date, NOW(),
-                ROUND((EXTRACT(EPOCH FROM (SELECT NOW() - entry_time FROM floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}')) / 60)::numeric, 2) as minutes from floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}'"""
-            )
-            row = cursor.fetchone()
-            if row is None:
-                current_floor = current_floor + 1
-            else:
-                license_plate = row[0]
-                entry_time = row[1]
-                entry_date = row[2]
-                exit_time = row[3]
-                rate = Decimal('0.50') if vehicle.get_vehicle_type() == 'Car' else Decimal('0.25')
-                charges = row[4] * rate
-
-                query: str = f"""INSERT INTO History(license_plate, entry_date, entry_time, exit_time, charges)
-                            VALUES(%s,%s,%s,%s,%s)"""
+        try:
+            license_plate: str = None
+            entry_time: str = None
+            exit_time: str = None
+            entry_date: str = None
+            charges: Decimal = None
+            current_floor: int = 0
+            cursor = connection.cursor()
+            while license_plate is None and current_floor < self.floors:
                 cursor.execute(
-                    query,
-                    (license_plate, entry_date, entry_time, exit_time, charges,)
+                    f"""SELECT license_plate, entry_time, entry_date, NOW(),
+                    ROUND((EXTRACT(EPOCH FROM (SELECT NOW() - entry_time FROM floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}')) / 60)::numeric, 2) as minutes from floor_{current_floor} WHERE license_plate = '{vehicle.license_plate}'"""
                 )
+                row = cursor.fetchone()
+                if row is None:
+                    current_floor = current_floor + 1
+                else:
+                    license_plate = row[0]
+                    entry_time = row[1]
+                    entry_date = row[2]
+                    exit_time = row[3]
+                    rate = Decimal('0.50') if vehicle.get_vehicle_type() == 'Car' else Decimal('0.25')
+                    charges = row[4] * rate
 
-                query: str = f"""UPDATE floor_{current_floor}
-                            SET license_plate = NULL, vehicle_type = NULL, entry_time = NULL, entry_date = NULL, is_occupied = {False}
-                            WHERE license_plate = %s;
-                        """
-                cursor.execute(
-                    query,
-                    (vehicle.license_plate,)
-                )
+                    query: str = f"""INSERT INTO History(license_plate, entry_date, entry_time, exit_time, charges)
+                                VALUES(%s,%s,%s,%s,%s)"""
+                    cursor.execute(
+                        query,
+                        (license_plate, entry_date, entry_time, exit_time, charges,)
+                    )
+
+                    query: str = f"""UPDATE floor_{current_floor}
+                                SET license_plate = NULL, vehicle_type = NULL, entry_time = NULL, entry_date = NULL, is_occupied = {False}
+                                WHERE license_plate = %s;
+                            """
+                    cursor.execute(
+                        query,
+                        (vehicle.license_plate,)
+                    )
+        except psycopg2.Error as e:
+            print(f"Error: {e}")
+            print(traceback.format_exc())
                 
 
             
