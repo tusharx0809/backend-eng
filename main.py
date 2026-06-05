@@ -2,8 +2,8 @@ from datetime import datetime
 from models.ParkingLot import ParkingLot
 from fastapi import FastAPI, HTTPException, Request
 from typing import Any,Dict
-from models.ParkingEntryRequest import ParkingEntryRequest, ParkingEntryResponse
-from models.ParkingExitRequest import ParkingExitRequest, ParkingExitResponse
+from schemas.ParkingEntryRequest import ParkingEntryRequest, ParkingEntryResponse
+from schemas.ParkingExitRequest import ParkingExitRequest, ParkingExitResponse
 from lifespan import lifespan
 
 
@@ -26,8 +26,6 @@ async def enterVehice(payload: ParkingEntryRequest, request: Request) -> Dict[st
 
 
     async with db_pool as db_connection:
-        if await current_lot.checkParkinglot(db_connection):
-            raise HTTPException(status_code=400, detail="Parking Lot Full")
         
         response: ParkingEntryResponse = await current_lot.enterVehicle(
             payload,

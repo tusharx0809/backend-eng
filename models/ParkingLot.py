@@ -59,6 +59,25 @@ class ParkingLot:
             return False
     async def enterVehicle(self, parking_entry_request: ParkingEntryRequest, connection: PostgresConnectionPool) -> ParkingEntryResponse:
         try:
+            parkings_occupied: int = 0
+            total_parkings: int = self.floors * self.parkings_per_floors
+            current_floor: int = 0
+            while current_floor < self.floors:
+                count = await connection.fetchval(
+                    f"SELECT count(license_plate) FROM floor_{current_floor}"
+                )
+                parkings_occupied += count
+                current_floor += 1
+            if parkings_occupied == total_parkings:
+                print("Parking Lot Full!")
+                return ParkingEntryResponse(
+                    success=False,
+                    status="failed",
+                    message="Parking Lot Full!",
+                    timestamp=datetime.now().isoformat()
+                )
+            
+        
             check_query: str = f"""
                 SELECT license_plate from floor_{parking_entry_request.floor} WHERE parking_number = $1
                 """                  
