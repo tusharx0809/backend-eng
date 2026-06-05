@@ -1,12 +1,9 @@
 from datetime import datetime
 from models.ParkingLot import ParkingLot
-from models.Bike import Bike
-from models.Car import Car
-from models.Vehicle import Vehicle
 from fastapi import FastAPI, HTTPException, Request
 from typing import Any,Dict
 from models.ParkingEntryRequest import ParkingEntryRequest, ParkingEntryResponse
-from models.ParkingExitRequest import ParkingExitRequest
+from models.ParkingExitRequest import ParkingExitRequest, ParkingExitResponse
 from lifespan import lifespan
 
 
@@ -17,19 +14,11 @@ async def enterVehice(payload: ParkingEntryRequest, request: Request) -> Dict[st
     current_lot: ParkingLot = request.app.state.parking_lot
     db_pool = request.app.state.db_pool
 
-    floor = payload.floor
-    parking_number = payload.parking_number
-
-    if floor < 0 or floor >= current_lot.floors:
+    if payload.floor < 0 or payload.floor >= current_lot.floors:
         raise HTTPException(status_code=400, detail="Invalid parking!")
     
-    vehicle_type = payload.vehicle_type.strip().lower()
 
-    if vehicle_type == "car":
-        vehicle = Car(license_plate=payload.license_plate)
-    elif vehicle_type == "bike":
-        vehicle = Bike(license_plate=payload.license_plate)
-    else:
+    if payload.vehicle_type.strip().lower() not in ["car","bike"]:
         raise HTTPException(
             status_code=400, 
             detail=f"Invalid vehicle_type '{payload.vehicle_type}'. Must be 'Car' or 'Bike'."
@@ -41,35 +30,39 @@ async def enterVehice(payload: ParkingEntryRequest, request: Request) -> Dict[st
             raise HTTPException(status_code=400, detail="Parking Lot Full")
         
         response: ParkingEntryResponse = await current_lot.enterVehicle(
-            vehicle=vehicle,
-            floor=floor,
-            parking_number=parking_number,
+            payload,
             connection=db_connection
         )
 
         if not response.success:
             raise HTTPException(
                 status_code=400,
-                detail=response.message
+                detail={
+                    "success": response.success,
+                    "message": response.message
+                }
             )
         
         return response
 
 
-@ParkingApp.put("/exitVehicle")
+@ParkingApp.put("/exitVehicle", response_model=ParkingExitResponse)
 async def exitVehice(payload: ParkingExitRequest, request: Request) -> Dict[str,Any]:
-    vehicle = Vehicle(license_plate=payload.license_plate)
     current_lot: ParkingLot = request.app.state.parking_lot
 
     db_pool = request.app.state.db_pool
     
     async with db_pool as db_connection:
-        result = await current_lot.exitVehicle(vehicle, db_connection)
+        response: ParkingExitResponse = await current_lot.exitVehicle(payload, db_connection)
 
-    if result is None:
+    if not response.success:
         raise HTTPException(
-            status_code=404, 
-            detail=f"Vehicle with license plate {payload.license_plate} not found in the parking lot."
+            status_code=400,
+            detail={
+                "success":response.success,
+                "message":response.message
+            }
         )
     
-    return result
+    return response
+    
