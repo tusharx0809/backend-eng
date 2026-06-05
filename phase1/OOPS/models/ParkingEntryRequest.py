@@ -1,7 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from datetime import datetime
 
 class ParkingEntryRequest(BaseModel):
-    license_plate: str
+    license_plate: str = Field(None, min_length=4)
     vehicle_type: str
     floor: int
     parking_number: int
+
+class ParkingEntryResponse(BaseModel):
+    success: bool
+    status: str
+    message: str
+    timestamp: datetime

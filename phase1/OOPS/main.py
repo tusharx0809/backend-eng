@@ -5,14 +5,14 @@ from models.Car import Car
 from models.Vehicle import Vehicle
 from fastapi import FastAPI, HTTPException, Request
 from typing import Any,Dict
-from models.ParkingEntryRequest import ParkingEntryRequest
+from models.ParkingEntryRequest import ParkingEntryRequest, ParkingEntryResponse
 from models.ParkingExitRequest import ParkingExitRequest
 from lifespan import lifespan
 
 
 ParkingApp = FastAPI(lifespan=lifespan)
 
-@ParkingApp.post("/enterVehicle")
+@ParkingApp.post("/enterVehicle", response_model=ParkingEntryResponse)
 async def enterVehice(payload: ParkingEntryRequest, request: Request) -> Dict[str,Any]:
     current_lot: ParkingLot = request.app.state.parking_lot
     db_pool = request.app.state.db_pool
@@ -40,24 +40,20 @@ async def enterVehice(payload: ParkingEntryRequest, request: Request) -> Dict[st
         if await current_lot.checkParkinglot(db_connection):
             raise HTTPException(status_code=400, detail="Parking Lot Full")
         
-        success = await current_lot.enterVehicle(
+        response: ParkingEntryResponse = await current_lot.enterVehicle(
             vehicle=vehicle,
             floor=floor,
             parking_number=parking_number,
             connection=db_connection
         )
 
-        if not success:
+        if not response.success:
             raise HTTPException(
                 status_code=400,
-                detail=f"Failed to occupy {parking_number} on floor {floor}"
+                detail=response.message
             )
         
-        return {
-            "status":"success",
-            "message":f"Vehicle {vehicle.license_plate} parked on floor {floor}",
-            "timestamp":datetime.now().isoformat()
-        }
+        return response
 
 
 @ParkingApp.put("/exitVehicle")
