@@ -38,25 +38,6 @@ class ParkingLot:
                 "exit_time TIMESTAMP,"
                 "charges DECIMAL(10,2))"
             )
-    async def checkParkinglot(self, connection: PostgresConnectionPool) -> bool:
-        try:
-            parkings_occupied: int = 0
-            total_parkings: int = self.floors * self.parkings_per_floors
-            current_floor: int = 0
-            while current_floor < self.floors:
-                count = await connection.execute(
-                    f"SELECT count(license_plate) FROM floor_{current_floor}"
-                )
-                parkings_occupied += count
-                current_floor += 1
-            if parkings_occupied == total_parkings:
-                print("Parking Lot Full!")
-                return True
-            return False
-        except Exception as e:
-            print(f"Error: {e}")
-            print(traceback.format_exc())
-            return False
     async def enterVehicle(self, parking_entry_request: ParkingEntryRequest, connection: PostgresConnectionPool) -> ParkingEntryResponse:
         try:
             parkings_occupied: int = 0
