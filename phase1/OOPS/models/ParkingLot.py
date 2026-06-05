@@ -1,8 +1,9 @@
 from .Vehicle import Vehicle
 from db_manager.DatabaseConnection import PostgresConnectionPool
 from decimal import Decimal
-import asyncpg
 import traceback
+from .ParkingEntryRequest import ParkingEntryRequest, ParkingEntryResponse
+from datetime import datetime
 
 class ParkingLot:
     def __init__(self, floors: int, parkings_per_floors: int):
@@ -57,13 +58,33 @@ class ParkingLot:
             print(traceback.format_exc())
             return False
     async def enterVehicle(self, vehicle: Vehicle, floor: int, parking_number: int, connection: PostgresConnectionPool) -> bool:
-        try:                  
+        try:
+            check_query: str = f"""
+                SELECT license_plate from floor_{floor} WHERE parking_number = $1
+                """                  
             query: str = f"""
                 UPDATE floor_{floor} 
                 SET license_plate = $1, vehicle_type = $2, entry_time = NOW(), entry_date = CURRENT_DATE, is_occupied = $3
                 WHERE parking_number = $4
             """
             async with connection.transaction():
+                
+                license_plate = await connection.fetchval(
+                    check_query,
+                    parking_number
+                )
+
+                if license_plate is not None:
+                    return ParkingEntryResponse(
+                        success=False,
+                        status="failed",
+                        message=f"Parking Number: {parking_number} at floor: {floor} already taken",
+                        timestamp=datetime.now().isoformat()
+                    )
+                        
+
+                    
+
                 await connection.execute(
                     query,
                     vehicle.license_plate,
@@ -71,7 +92,12 @@ class ParkingLot:
                     True,
                     parking_number
                 )
-                print(f"{vehicle.license_plate} Parked at floor: {floor}, number {parking_number}")
+                return ParkingEntryResponse(
+                    success==True,
+                    status="success",
+                    message=f"Vehice: {vehicle.license_plate} parked at: {parking_number}, floor: {floor}",
+                    timestamp=datetime.now().isoformat()
+                )
                 
             return True
         except Exception as e:
