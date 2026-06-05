@@ -3,40 +3,74 @@ from decimal import Decimal
 import traceback
 from schemas.ParkingEntryRequest import ParkingEntryRequest, ParkingEntryResponse
 from schemas.ParkingExitRequest import ParkingExitRequest, ParkingExitResponse
+from schemas.CreateDBStructureRequest import ParkitLotStructureRequest, ParkingLotStructureResponse
 from datetime import datetime
 
 class ParkingLot:
-    def __init__(self, floors: int, parkings_per_floors: int):
+    def __init__(self, floors: int, parkings_per_floor: int):
         self.floors: int = floors
-        self.parkings_per_floors: int = parkings_per_floors
+        self.parkings_per_floors: int = parkings_per_floor
 
-    async def initialize_schema(self, connection):
-        for floor in range(self.floors):
-            table_name: str = f"Floor_{floor}"
-            await connection.execute(
-                f"CREATE TABLE IF NOT EXISTS {table_name} ("
-                "parking_number SERIAL PRIMARY KEY,"
-                "license_plate VARCHAR(100),"
-                "vehicle_type VARCHAR(50),"
-                "entry_time TIMESTAMP," 
-                "entry_date DATE,"
-                "is_occupied BOOL DEFAULT FALSE)"
-            )
-            count = await connection.fetchval(f"SELECT count(1) from  {table_name};")
-            if count == 0:
+    async def initialize_schema(self, connection) -> ParkingLotStructureResponse:
+        try:
+            
+            for floor in range(self.floors):
+                table_name: str = f"Floor_{floor}"
                 await connection.execute(
-                    f"INSERT INTO {table_name} (parking_number)"
-                    f"SELECT generate_series(1, $1)",
-                    self.parkings_per_floors
+                    f"CREATE TABLE IF NOT EXISTS {table_name} ("
+                    "parking_number SERIAL PRIMARY KEY,"
+                    "license_plate VARCHAR(100),"
+                    "vehicle_type VARCHAR(50),"
+                    "entry_time TIMESTAMP," 
+                    "entry_date DATE,"
+                    "is_occupied BOOL DEFAULT FALSE)"
                 )
-            await connection.execute(
-                f"CREATE TABLE IF NOT EXISTS History ("
-                "id_number SERIAL PRIMARY KEY,"
-                "license_plate VARCHAR(100),"
-                "entry_date DATE,"
-                "entry_time TIMESTAMP,"
-                "exit_time TIMESTAMP,"
-                "charges DECIMAL(10,2))"
+                count = await connection.fetchval(f"SELECT count(1) from  {table_name};")
+                if count == 0:
+                    await connection.execute(
+                        f"INSERT INTO {table_name} (parking_number)"
+                        f"SELECT generate_series(1, $1)",
+                        self.parkings_per_floors
+                    )
+                await connection.execute(
+                    f"CREATE TABLE IF NOT EXISTS History ("
+                    "id_number SERIAL PRIMARY KEY,"
+                    "license_plate VARCHAR(100),"
+                    "entry_date DATE,"
+                    "entry_time TIMESTAMP,"
+                    "exit_time TIMESTAMP,"
+                    "charges DECIMAL(10,2))"
+                )
+                await connection.execute(
+                    f"CREATE TABLE IF NOT EXISTS parking_lot_config ("
+                    "    id INTEGER PRIMARY KEY,"
+                    "    floors INTEGER NOT NULL,"
+                    "    parkings_per_floor INTEGER NOT NULL,"
+                    "    created_at TIMESTAMP DEFAULT NOW()"
+                    ");"
+                )
+                await connection.execute("""
+                    INSERT INTO parking_lot_config (
+                        id,
+                        floors,
+                        parkings_per_floor
+                    )
+                    VALUES (1, $1, $2)
+                    ON CONFLICT (id)
+                    DO UPDATE SET
+                        floors = EXCLUDED.floors,
+                        parkings_per_floor = EXCLUDED.parkings_per_floor
+                """,
+                self.floors,
+                self.parkings_per_floors)
+            return ParkingLotStructureResponse(
+                success=True,
+                message="Database strucutre created..."
+            )
+        except Exception as e:
+            return ParkingLotStructureResponse(
+                success=False,
+                message=traceback.format_exc()
             )
     async def enterVehicle(self, parking_entry_request: ParkingEntryRequest, connection: PostgresConnectionPool) -> ParkingEntryResponse:
         try:

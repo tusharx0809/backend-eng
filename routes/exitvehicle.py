@@ -7,9 +7,29 @@ router = APIRouter()
 
 @router.put("/exitVehicle", response_model=ParkingExitResponse)
 async def exitVehice(payload: ParkingExitRequest, request: Request) -> Dict[str,Any]:
-    current_lot: ParkingLot = request.app.state.parking_lot
-
     db_pool = request.app.state.db_pool
+
+
+    async with db_pool as db_connection:
+        row = await db_connection.fetchrow("""
+                SELECT floors, parkings_per_floor
+                FROM parking_lot_config
+                WHERE id = 1
+            """)
+
+        if row is None:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "message": "Strucutre not initialized..."
+                }
+            )
+
+        current_lot = ParkingLot(
+            row['floors'],
+            row['parkings_per_floor']
+        )
     
     async with db_pool as db_connection:
         response: ParkingExitResponse = await current_lot.exitVehicle(payload, db_connection)
