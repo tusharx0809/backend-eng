@@ -7,22 +7,39 @@ router = APIRouter()
 
 @router.post("/enterVehicle", response_model=ParkingEntryResponse)
 async def enterVehice(payload: ParkingEntryRequest, request: Request) -> Dict[str,Any]:
-    current_lot: ParkingLot = request.app.state.parking_lot
-    db_pool = request.app.state.db_pool
-
-    if payload.floor < 0 or payload.floor >= current_lot.floors:
-        raise HTTPException(status_code=400, detail="Invalid parking!")
-    
-
-    if payload.vehicle_type.strip().lower() not in ["car","bike"]:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid vehicle_type '{payload.vehicle_type}'. Must be 'Car' or 'Bike'."
-        )    
-
+    db_pool = request.app.state.db_pool    
 
     async with db_pool as db_connection:
-        
+        row = await db_connection.fetchrow("""
+                SELECT floors, parkings_per_floor
+                FROM parking_lot_config
+                WHERE id = 1
+            """)
+
+        if row is None:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "message": "Strucutre not initialized..."
+                }
+            )
+
+        current_lot = ParkingLot(
+            row['floors'],
+            row['parkings_per_floor']
+        )
+
+        if payload.floor < 0 or payload.floor >= current_lot.floors:
+            raise HTTPException(status_code=400, detail="Invalid parking!")
+    
+
+        if payload.vehicle_type.strip().lower() not in ["car","bike"]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid vehicle_type '{payload.vehicle_type}'. Must be 'Car' or 'Bike'."
+            )
+
         response: ParkingEntryResponse = await current_lot.enterVehicle(
             payload,
             connection=db_connection
