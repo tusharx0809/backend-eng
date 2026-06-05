@@ -1,8 +1,8 @@
 from db_manager.DatabaseConnection import PostgresConnectionPool
 from decimal import Decimal
 import traceback
-from .ParkingEntryRequest import ParkingEntryRequest, ParkingEntryResponse
-from .ParkingExitRequest import ParkingExitRequest, ParkingExitResponse
+from schemas.ParkingEntryRequest import ParkingEntryRequest, ParkingEntryResponse
+from schemas.ParkingExitRequest import ParkingExitRequest, ParkingExitResponse
 from datetime import datetime
 
 class ParkingLot:
