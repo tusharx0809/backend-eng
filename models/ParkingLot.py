@@ -11,7 +11,7 @@ class ParkingLot:
         self.floors: int = floors
         self.parkings_per_floors: int = parkings_per_floor
 
-    async def initialize_schema(self, connection) -> ParkingLotStructureResponse:
+    async def initialize_schema(self, connection) -> list[bool,str]:
         try:
             
             for floor in range(self.floors):
@@ -63,15 +63,9 @@ class ParkingLot:
                 """,
                 self.floors,
                 self.parkings_per_floors)
-            return ParkingLotStructureResponse(
-                success=True,
-                message="Database strucutre created..."
-            )
+            return [True,"Database structure created..."]
         except Exception as e:
-            return ParkingLotStructureResponse(
-                success=False,
-                message=traceback.format_exc()
-            )
+            return [False, traceback.format_exc()]
     async def enterVehicle(self, license_plate: str, vehicle_type: str, floor: int, parking_number: int, connection: PostgresConnectionPool) -> list[bool, str]:
         try:
             parkings_occupied: int = 0
