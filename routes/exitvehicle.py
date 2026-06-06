@@ -32,15 +32,21 @@ async def exitVehice(payload: ParkingExitRequest, request: Request) -> Dict[str,
         )
     
     async with db_pool as db_connection:
-        response: ParkingExitResponse = await current_lot.exitVehicle(payload, db_connection)
+        response: list = await current_lot.exitVehicle(payload.license_plate, db_connection)
 
-    if not response.success:
+    if not response[0]:
         raise HTTPException(
             status_code=400,
             detail={
-                "success":response.success,
-                "message":response.message
+                "success":response[0],
+                "message":response[1]
             }
         )
     
-    return response
+    return ParkingExitResponse(
+        success=response[0],
+        message=response[1],
+        license_plate=payload.license_plate,
+        charges=response[2],
+        minutes_parked=response[3]
+    )

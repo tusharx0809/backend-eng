@@ -72,7 +72,7 @@ class ParkingLot:
                 success=False,
                 message=traceback.format_exc()
             )
-    async def enterVehicle(self, parking_entry_request: ParkingEntryRequest, connection: PostgresConnectionPool) -> ParkingEntryResponse:
+    async def enterVehicle(self, license_plate: str, vehicle_type: str, floor: int, parking_number: int, connection: PostgresConnectionPool) -> list[bool, str]:
         try:
             parkings_occupied: int = 0
             total_parkings: int = self.floors * self.parkings_per_floors
@@ -84,90 +84,63 @@ class ParkingLot:
                 parkings_occupied += count
                 current_floor += 1
             if parkings_occupied == total_parkings:
-                print("Parking Lot Full!")
-                return ParkingEntryResponse(
-                    success=False,
-                    status="failed",
-                    message="Parking Lot Full!",
-                    timestamp=datetime.now().isoformat()
-                )
+                return [False,"Parking Lot Full.."]
             
         
             check_query: str = f"""
-                SELECT license_plate from floor_{parking_entry_request.floor} WHERE parking_number = $1
+                SELECT license_plate from floor_{floor} WHERE parking_number = $1
                 """                  
             query: str = f"""
-                UPDATE floor_{parking_entry_request.floor} 
+                UPDATE floor_{floor} 
                 SET license_plate = $1, vehicle_type = $2, entry_time = NOW(), entry_date = CURRENT_DATE, is_occupied = $3
                 WHERE parking_number = $4
             """
             async with connection.transaction():
                 
-                license_plate = await connection.fetchval(
+                license_plate_currently_parked = await connection.fetchval(
                     check_query,
-                    parking_entry_request.parking_number
+                    parking_number
                 )
 
-                if license_plate is not None:
-                    return ParkingEntryResponse(
-                        success=False,
-                        status="failed",
-                        message=f"Parking Number: {parking_entry_request.parking_number} at floor: {parking_entry_request.floor} already taken",
-                        timestamp=datetime.now().isoformat()
-                    )
+                if license_plate_currently_parked is not None:
+                    return [False, f"Parking: {parking_number} at floor: {floor} is already occupied"]
                         
                 
                 await connection.execute(
                     query,
-                    parking_entry_request.license_plate,
-                    f"{parking_entry_request.vehicle_type[0].capitalize()}{parking_entry_request.vehicle_type[1:len(parking_entry_request.vehicle_type)]}",
+                    license_plate,
+                    f"{vehicle_type[0].capitalize()}{vehicle_type[1:len(vehicle_type)]}",
                     True,
-                    parking_entry_request.parking_number
+                    parking_number
                 )
-                return ParkingEntryResponse(
-                    success=True,
-                    status="success",
-                    message=f"Vehice: {parking_entry_request.vehicle_type} parked at number: {parking_entry_request.parking_number}, floor: {parking_entry_request.floor}",
-                    timestamp=datetime.now().isoformat()
-                )
+            return [True,f"Vehicle Parked at numeber: {parking_number}, floor: {floor}"]
                 
         except Exception as e:
-            return ParkingEntryResponse(
-                success=True,
-                status=f"failed: {e}",
-                message=f"{traceback.format_exc()}",
-                timestamp=datetime.now().isoformat()
-            )            
+            return [False,traceback.format_exc()]           
 
 
-    async def exitVehicle(self, parking_exit_request: ParkingExitRequest, connection: PostgresConnectionPool) -> ParkingExitResponse:
+    async def exitVehicle(self, license_plate: str, connection: PostgresConnectionPool) -> list[bool,str,float,float]:
         try:
-            license_plate: str = None
+            license_plate_parked: str = None
             vehicle_type: str = None
             entry_time: str = None
             exit_time: str = None
             entry_date: str = None
             charges: Decimal = None
             current_floor: int = 0
-            while license_plate is None and current_floor < self.floors:
+            while license_plate_parked is None and current_floor < self.floors:
                 row = await connection.fetchrow(
                     f"""SELECT license_plate, vehicle_type, entry_time, entry_date, NOW()::timestamp as current_now,
-                    ROUND((EXTRACT(EPOCH FROM (SELECT NOW() - entry_time FROM floor_{current_floor} WHERE license_plate = '{parking_exit_request.license_plate}')) / 60)::numeric, 2) as minutes from floor_{current_floor} WHERE license_plate = $1""",
-                    parking_exit_request.license_plate
+                    ROUND((EXTRACT(EPOCH FROM (SELECT NOW() - entry_time FROM floor_{current_floor} WHERE license_plate = '{license_plate}')) / 60)::numeric, 2) as minutes from floor_{current_floor} WHERE license_plate = $1""",
+                    license_plate
                 )
                 
                 if row is None:
                     current_floor = current_floor + 1
                     if current_floor == self.floors-1:
-                        return ParkingExitResponse(
-                            success=False,
-                            message="Vehicle Not found",
-                            license_plate="",
-                            charges=0.00,
-                            minutes_parked=0.00
-                        )
+                        return [False, f"Vehicle: {license_plate} not found!", 0.00,0.00]
                 else:
-                    license_plate = row['license_plate']
+                    license_plate_parked = row['license_plate']
                     vehicle_type = row['vehicle_type']
                     entry_time = row['entry_time']
                     entry_date = row['entry_date']
@@ -191,20 +164,13 @@ class ParkingLot:
                                 """
                         await connection.execute(
                             query,
-                            parking_exit_request.license_plate
+                            license_plate_parked
                         )
-                    return ParkingExitResponse(
-                        success=True,
-                        message="Vehicle Unparked",
-                        license_plate=parking_exit_request.license_plate,
-                        charges=charges,
-                        minutes_parked=row['minutes']
-                    )
+                    return [True, f"Vehicle: {license_plate_parked}, left the parking", charges, row['minutes']]
                         
                     
         except Exception as e:
-            print(f"Error: {e}")
-            print(traceback.format_exc())
+            return [False,traceback.format_exc(),0.00,0.00]
                 
 
             
