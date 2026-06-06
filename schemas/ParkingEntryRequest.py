@@ -9,6 +9,5 @@ class ParkingEntryRequest(BaseModel):
 
 class ParkingEntryResponse(BaseModel):
     success: bool
-    status: str
     message: str
     timestamp: datetime

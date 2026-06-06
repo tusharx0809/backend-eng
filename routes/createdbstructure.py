@@ -12,15 +12,18 @@ async def createDBStrucutre(structure: ParkitLotStructureRequest, request: Reque
     current_lot: ParkingLot = ParkingLot(structure.floors, structure.number_of_parkings)
 
     async with db_pool as db_connection:
-        response = await current_lot.initialize_schema(db_connection)
+        response: list = await current_lot.initialize_schema(db_connection)
 
-    if not response.success:
+    if not response[0]:
         raise HTTPException(
             status_code=400,
             detail={
-                "success": response.success,
-                "message": response.message
+                "success": response[0],
+                "message": response[1]
             }
         )
 
-    return response
+    return ParkingLotStructureResponse(
+        success=response[0],
+        message=response[1]
+    )
