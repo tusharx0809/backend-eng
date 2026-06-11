@@ -14,7 +14,6 @@ func main() {
 
 	if err != nil {
 		log.Fatal("Error loading .env file")
-		return
 	}
 
 	//fmt.Println(os.Getenv("PORT"))
