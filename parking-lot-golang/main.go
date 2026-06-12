@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"parking-lot-golang/dbmanager"
+	"parking-lot-golang/handlers"
+	"parking-lot-golang/repository"
 	"parking-lot-golang/server"
 
 	"github.com/joho/godotenv"
@@ -29,7 +31,11 @@ func main() {
 
 	fmt.Println("Connection successful!")
 
-	server := server.StartServer()
+	repo := repository.NewParkingRepository(pool)
+
+	handler := handlers.NewParkingHandler(repo)
+
+	server := server.StartServer(handler)
 	fmt.Println("Server running on :8080")
 	server_error := server.ListenAndServe()
 

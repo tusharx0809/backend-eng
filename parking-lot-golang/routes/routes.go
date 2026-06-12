@@ -1,11 +1,12 @@
-package handlers
+package routes
 
 import (
 	"fmt"
 	"net/http"
+	"parking-lot-golang/handlers"
 )
 
-func RegisterRoutes(mux *http.ServeMux) {
+func RegisterRoutes(mux *http.ServeMux, handler *handlers.ParkingHandler) {
 	mux.HandleFunc("/hello", helloHandler)
 	mux.HandleFunc("/health", healthHandler)
 }

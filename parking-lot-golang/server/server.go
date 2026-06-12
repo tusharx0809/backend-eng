@@ -3,17 +3,16 @@ package server
 import (
 	"net/http"
 	"parking-lot-golang/handlers"
+	"parking-lot-golang/routes"
 )
 
-func StartServer() *http.Server {
+func StartServer(handler *handlers.ParkingHandler) *http.Server {
 	mux := http.NewServeMux()
 
-	handlers.RegisterRoutes(mux)
+	routes.RegisterRoutes(mux, handler)
 
-	server := &http.Server{
+	return &http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 	}
-
-	return server
 }
