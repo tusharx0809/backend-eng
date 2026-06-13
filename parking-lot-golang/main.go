@@ -8,6 +8,7 @@ import (
 	"parking-lot-golang/handlers"
 	"parking-lot-golang/repository"
 	"parking-lot-golang/server"
+	"parking-lot-golang/services"
 
 	"github.com/joho/godotenv"
 )
@@ -33,7 +34,9 @@ func main() {
 
 	repo := repository.NewParkingRepository(pool)
 
-	handler := handlers.NewParkingHandler(repo)
+	service := services.NewParkingService(repo)
+
+	handler := handlers.NewParkingHandler(service)
 
 	server := server.StartServer(handler)
 	fmt.Println("Server running on :8080")
