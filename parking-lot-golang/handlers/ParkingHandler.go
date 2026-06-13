@@ -1,17 +1,17 @@
 package handlers
 
 import (
-	"parking-lot-golang/repository"
+	"parking-lot-golang/services"
 )
 
 type ParkingHandler struct {
-	Repo *repository.ParkingRepository
+	Service *services.ParkingService
 }
 
 func NewParkingHandler(
-	repo *repository.ParkingRepository,
+	service *services.ParkingService,
 ) *ParkingHandler {
 	return &ParkingHandler{
-		Repo: repo,
+		Service: service,
 	}
 }
