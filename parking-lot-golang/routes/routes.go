@@ -6,5 +6,5 @@ import (
 )
 
 func RegisterRoutes(mux *http.ServeMux, handler *handlers.ParkingHandler) {
-	mux.HandleFunc("GET /parkingConfig", handler.ParkingLotConfigExists)
+	mux.HandleFunc("POST /parkingConfig", handler.CreateDBStrucuture)
 }
