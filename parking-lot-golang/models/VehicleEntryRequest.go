@@ -1,8 +1,8 @@
 package models
 
 type VehicleEntryRequest struct {
-	licensePlate  string `json:"licenseplate"`
-	vehicleType   string `json:"vehicletype"`
-	floor         int    `json:"floor"`
-	parkingNumber int    `json:"parkingnumber"`
+	LicensePlate  string `json:"license_plate"`
+	VehicleType   string `json:"vehicle_type"`
+	Floor         int    `json:"floor"`
+	ParkingNumber int    `json:"parking_number"`
 }
