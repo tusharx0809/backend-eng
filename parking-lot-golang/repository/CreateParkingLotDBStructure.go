@@ -126,6 +126,25 @@ func (r *ParkingRepository) ParkingLotDBStructCreate(
 			return false, nil
 		}
 
+		history_query :=
+			`
+			CREATE TABLE IF NOT EXISTS History (
+            id_number SERIAL PRIMARY KEY,
+            license_plate VARCHAR(100),
+            entry_date DATE,
+            entry_time TIMESTAMP,
+            exit_time TIMESTAMP,
+            charges DECIMAL(10,2))
+		`
+		_, err = r.DB.Exec(
+			context.Background(),
+			history_query,
+		)
+
+		if err != nil {
+			return false, err
+		}
+
 	}
 	return true, nil
 }
