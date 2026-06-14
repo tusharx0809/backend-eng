@@ -95,6 +95,55 @@ func (r *ParkingRepository) ParkingLotDBStructCreate(
 		if err != nil {
 			return false, err
 		}
+
+		var count_row int = 0
+		check_count_query := fmt.Sprintf(
+			`SELECT count(1) from %s`, table_name,
+		)
+
+		err = r.DB.QueryRow(
+			context.Background(),
+			check_count_query,
+		).Scan(&count_row)
+
+		if err != nil {
+			return false, err
+		}
+
+		insert_query := fmt.Sprintf(
+			`INSERT INTO %s (parking_number)
+			 SELECT generate_series(1,$1)
+			`, table_name,
+		)
+
+		_, err = r.DB.Exec(
+			context.Background(),
+			insert_query,
+			numberofParkings,
+		)
+
+		if err != nil {
+			return false, nil
+		}
+
+	}
+	history_query :=
+		`
+			CREATE TABLE IF NOT EXISTS History (
+            id_number SERIAL PRIMARY KEY,
+            license_plate VARCHAR(100),
+            entry_date DATE,
+            entry_time TIMESTAMP,
+            exit_time TIMESTAMP,
+            charges DECIMAL(10,2))
+		`
+	_, err = r.DB.Exec(
+		context.Background(),
+		history_query,
+	)
+
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }
