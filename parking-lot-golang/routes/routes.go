@@ -8,4 +8,5 @@ import (
 func RegisterRoutes(mux *http.ServeMux, handler *handlers.ParkingHandler) {
 	mux.HandleFunc("POST /createdbstructure", handler.CreateDBStrucuture)
 	mux.HandleFunc("POST /enterVehicle", handler.EnterVehicle)
+	mux.HandleFunc("PUT /exitVehicle", handler.ExitVehicle)
 }
