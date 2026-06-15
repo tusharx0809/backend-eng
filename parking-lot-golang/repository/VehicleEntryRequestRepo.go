@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -46,10 +47,18 @@ func (r *ParkingRepository) GetTotalOccupied() (int, error) {
 	return total_occupied, nil
 }
 
+func (r *ParkingRepository) CapitalizeVehicleType(vehicleType string) string {
+	if len(vehicleType) == 0 {
+		return ""
+	}
+
+	return strings.ToUpper(string(vehicleType[0])) + strings.ToLower(vehicleType[1:])
+}
+
 func (r *ParkingRepository) EnterVehicle(licensePlate string, vehicleType string, floor int, parking_number int) (bool, error) {
 	table_name := "floor_" + strconv.Itoa(floor)
 	var total_parkings int
-
+	vehicleType = r.CapitalizeVehicleType(vehicleType)
 	get_total_parkings_query := `SELECT floors*parkings_per_floor FROM parking_lot_config`
 
 	err := r.DB.QueryRow(
